@@ -8,7 +8,7 @@ abstract interface class MaxSubscriptionContract {
 }
 
 class DevelopmentSubscriptionService implements MaxSubscriptionContract {
-  MaxPlan _plan = MaxPlan.free;
+  final MaxPlan _plan = MaxPlan.free;
 
   @override
   MaxPlan get currentPlan => _plan;
