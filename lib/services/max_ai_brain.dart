@@ -19,8 +19,6 @@ class MaxAIBrain {
 
   Future<String> askMAX({required String message}) async {
     final user = await auth.currentUser();
-    if (user == null) return 'Please sign in to use MAX.';
-
     await memoryService.initialize();
     final memories = memoryService.relevantMemories(message, limit: 8);
 
@@ -28,9 +26,10 @@ class MaxAIBrain {
       message: message,
       memories: memories,
       userProfile: {
-        'id': user.id,
-        'email': user.email,
-        'name': user.displayName,
+        if (user != null) 'id': user.id,
+        if (user != null) 'email': user.email,
+        if (user?.displayName != null) 'name': user!.displayName,
+        if (user == null) 'mode': 'guest-development',
       },
     );
   }
