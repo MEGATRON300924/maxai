@@ -28,7 +28,9 @@ class MaxMindService {
       );
     }
 
-    if (RegExp(r'^[😀-🙏]+$').hasMatch(value)) {
+    final isEmojiOnly = value.runes.isNotEmpty &&
+        value.runes.every((rune) => rune >= 0x1F600 && rune <= 0x1F64F);
+    if (isEmojiOnly) {
       return const MindResponse(
         message: "I can use emojis, but I'd still like to know your name.",
         canContinue: false,
@@ -42,8 +44,7 @@ class MaxMindService {
       final firstName = value.split(' ').first;
 
       return MindResponse(
-        message:
-            "Would you prefer I call you $firstName or $value?",
+        message: "Would you prefer I call you $firstName or $value?",
       );
     }
 
