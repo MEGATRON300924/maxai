@@ -15,14 +15,16 @@ class MaxAuthService implements MaxAuthContract {
 
   @override
   Future<MaxAuthUser?> currentUser() async {
-    if (_adapter != null) return _adapter!.currentUser();
+    final adapter = _adapter;
+    if (adapter != null) return adapter.currentUser();
     return _developmentUser;
   }
 
   @override
   Future<MaxAuthResult> signIn({required String email, required String password}) async {
-    if (_adapter != null) {
-      return _adapter!.signIn(email: email, password: password);
+    final adapter = _adapter;
+    if (adapter != null) {
+      return adapter.signIn(email: email, password: password);
     }
     if (email.trim().isEmpty || password.isEmpty) {
       return const MaxAuthResult.failure('Email and password are required.');
@@ -36,11 +38,14 @@ class MaxAuthService implements MaxAuthContract {
 
   @override
   Future<MaxAuthResult> signUp({required String email, required String password}) async {
-    if (_adapter != null) {
-      return _adapter!.signUp(email: email, password: password);
+    final adapter = _adapter;
+    if (adapter != null) {
+      return adapter.signUp(email: email, password: password);
     }
     if (email.trim().isEmpty || password.length < 6) {
-      return const MaxAuthResult.failure('Use a valid email and a password of at least 6 characters.');
+      return const MaxAuthResult.failure(
+        'Use a valid email and a password of at least 6 characters.',
+      );
     }
     _developmentUser = MaxAuthUser(id: 'dev-user', email: email.trim());
     return MaxAuthResult.success(
@@ -51,13 +56,18 @@ class MaxAuthService implements MaxAuthContract {
 
   @override
   Future<void> signOut() async {
-    if (_adapter != null) return _adapter!.signOut();
+    final adapter = _adapter;
+    if (adapter != null) {
+      await adapter.signOut();
+      return;
+    }
     _developmentUser = null;
   }
 
   @override
   Future<MaxAuthResult> refreshSession() async {
-    if (_adapter != null) return _adapter!.refreshSession();
+    final adapter = _adapter;
+    if (adapter != null) return adapter.refreshSession();
     return MaxAuthResult.success(user: _developmentUser);
   }
 }
