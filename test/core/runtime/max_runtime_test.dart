@@ -49,12 +49,16 @@ class _FakeAuth implements MaxAuthContract {
   }
 
   @override
-  Future<MaxAuthResult> signIn({required String email, required String password}) =>
-      Future.value(MaxAuthResult.success(user: await currentUser()));
+  Future<MaxAuthResult> signIn({
+    required String email,
+    required String password,
+  }) async => MaxAuthResult.success(user: await currentUser());
 
   @override
-  Future<MaxAuthResult> signUp({required String email, required String password}) =>
-      Future.value(MaxAuthResult.success(user: await currentUser()));
+  Future<MaxAuthResult> signUp({
+    required String email,
+    required String password,
+  }) async => MaxAuthResult.success(user: await currentUser());
 
   @override
   Future<void> signOut() async {}
