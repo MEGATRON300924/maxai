@@ -11,6 +11,8 @@ import 'services/auth_service.dart';
 import 'services/chat_service.dart';
 import 'services/gemini_service.dart';
 import 'services/max_ai_brain.dart';
+import 'services/max_memory_service.dart';
+import 'services/max_voice_service.dart';
 import 'ai/context_provider.dart';
 import 'ai/memory_manager.dart';
 import 'core/app_colors.dart';
@@ -21,9 +23,6 @@ const _geminiApiKey = String.fromEnvironment('GEMINI_API_KEY');
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // MAX Cloud/Supabase is intentionally not initialized until real
-  // environment configuration is supplied. The shared runtime remains usable
-  // in development without cloud credentials.
   final runtime = await MaxRuntimeScope.instance.initialize();
 
   final brain = MaxAIBrain(
@@ -31,7 +30,19 @@ Future<void> main() async {
     auth: runtime.auth,
   );
 
-  runApp(MaxAIApp(chatService: ChatService(brain: brain)));
+  final voiceService = MaxVoiceService(
+    memoryService: MaxVoiceMemoryService.instance,
+  );
+  await voiceService.initialize();
+
+  runApp(
+    MaxAIApp(
+      chatService: ChatService(
+        brain: brain,
+        voiceService: voiceService,
+      ),
+    ),
+  );
 }
 
 class MaxAIApp extends StatelessWidget {
