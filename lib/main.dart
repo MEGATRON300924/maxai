@@ -31,7 +31,7 @@ Future<void> main() async {
   );
 
   final voiceService = MaxVoiceService(
-    memoryService: MaxVoiceMemoryService.instance,
+    memoryService: MaxMemoryService.instance,
   );
   await voiceService.initialize();
 
