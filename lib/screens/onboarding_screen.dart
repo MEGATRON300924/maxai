@@ -2,571 +2,168 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 import '../providers/onboarding_provider.dart';
 import '../providers/profile_provider.dart';
-
-
 import '../models/user_profile.dart';
-
-
 import '../ai/memory_manager.dart';
-
-
 import 'main_navigation.dart';
 
-
-
 class OnboardingScreen extends StatefulWidget {
-
-
-  const OnboardingScreen({
-
-    super.key,
-
-  });
-
-
+  const OnboardingScreen({super.key});
 
   @override
-  State<OnboardingScreen> createState() =>
-
-      _OnboardingScreenState();
-
+  State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-
-
-
-
-class _OnboardingScreenState
-
-    extends State<OnboardingScreen> {
-
-
-  final TextEditingController controller =
-
-      TextEditingController();
-
-
+class _OnboardingScreenState extends State<OnboardingScreen> {
+  final TextEditingController controller = TextEditingController();
+  bool saving = false;
 
   @override
   void dispose() {
-
     controller.dispose();
-
     super.dispose();
-
   }
-
-
-
-
 
   Future<void> continueSetup() async {
+    final onboarding = context.read<OnboardingProvider>();
+    final answer = controller.text.trim();
 
+    if (answer.isEmpty) {
+      return;
+    }
 
-    final onboarding =
-
-        context.read<OnboardingProvider>();
-
-
-
-    onboarding.saveAnswer(
-
-      controller.text.trim(),
-
-    );
-
-
-
+    onboarding.saveAnswer(answer);
     controller.clear();
 
-
-
-
-
-    if(onboarding.currentStep <
-
-        onboarding.questions.length - 1){
-
-
-
+    if (onboarding.currentStep < onboarding.questions.length - 1) {
       onboarding.next();
-
-
-
       return;
-
     }
 
+    setState(() => saving = true);
 
-
-
+    final name = onboarding.answerForStep(0).isEmpty
+        ? 'User'
+        : onboarding.answerForStep(0);
+    final interests = onboarding.answerForStep(1);
+    final helpGoals = onboarding.answerForStep(2);
+    final communicationStyle = onboarding.answerForStep(3);
+    final importantMemory = onboarding.answerForStep(4);
 
     final profile = UserProfile(
-
-      id:
-
-          DateTime.now()
-
-              .millisecondsSinceEpoch
-
-              .toString(),
-
-
-
-      name:
-
-          onboarding.answers["0"]
-
-          ??
-
-          "User",
-
-
-
-      email:
-
-          "",
-
-
-
-      interests:
-
-          onboarding.answers["1"],
-
-
-
-      preferences:
-
-          onboarding.answers["2"],
-
-
-
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      name: name,
+      email: '',
+      interests: interests.isEmpty ? null : interests,
+      preferences: [
+        if (helpGoals.isNotEmpty) 'help_goals: $helpGoals',
+        if (communicationStyle.isNotEmpty)
+          'communication_style: $communicationStyle',
+      ].join('\n'),
     );
 
+    context.read<ProfileProvider>().loadProfile(profile);
 
-
-
-
-    context
-
-        .read<ProfileProvider>()
-
-        .loadProfile(
-
-          profile,
-
-        );
-
-
-
-
-
-    final memory =
-
-        context.read<MemoryManager>();
-
-
-
-    memory.save(
-
-      "name",
-
-      profile.name,
-
-    );
-
-
-
-    memory.save(
-
-      "interests",
-
-      profile.interests ?? "",
-
-    );
-
-
-
-    memory.save(
-
-      "preferences",
-
-      profile.preferences ?? "",
-
-    );
-
-
-
-
-
-    final prefs =
-
-        await SharedPreferences.getInstance();
-
-
-
-    await prefs.setBool(
-
-      "onboarding_completed",
-
-      true,
-
-    );
-
-
-
-
-
-    if(!mounted){
-
-      return;
-
+    final memory = context.read<MemoryManager>();
+    memory.save('name', name);
+    if (interests.isNotEmpty) memory.save('interests', interests);
+    if (helpGoals.isNotEmpty) memory.save('help_goals', helpGoals);
+    if (communicationStyle.isNotEmpty) {
+      memory.save('communication_style', communicationStyle);
+    }
+    if (importantMemory.isNotEmpty) {
+      memory.save('important_memory', importantMemory);
     }
 
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('onboarding_completed', true);
 
-
-
+    if (!mounted) return;
+    setState(() => saving = false);
 
     Navigator.pushReplacement(
-
       context,
-
-      MaterialPageRoute(
-
-        builder: (_) =>
-
-            const MainNavigation(),
-
-      ),
-
+      MaterialPageRoute(builder: (_) => const MainNavigation()),
     );
-
-
   }
-
-
-
-
 
   @override
   Widget build(BuildContext context) {
-
-
-    final onboarding =
-
-        context.watch<OnboardingProvider>();
-
-
+    final onboarding = context.watch<OnboardingProvider>();
 
     return Scaffold(
-
-      backgroundColor:
-
-          Colors.black,
-
-
-
-      body:
-
-          SafeArea(
-
-        child:
-
-            Padding(
-
-          padding:
-
-              const EdgeInsets.all(24),
-
-
-
-          child:
-
-              Column(
-
-            mainAxisAlignment:
-
-                MainAxisAlignment.center,
-
-
-
-            crossAxisAlignment:
-
-                CrossAxisAlignment.start,
-
-
-
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
-
-
               const Text(
-
-                "Welcome to MAX",
-
-                style:
-
-                    TextStyle(
-
-                  color:
-
-                      Colors.white,
-
-                  fontSize:
-
-                      32,
-
-                  fontWeight:
-
-                      FontWeight.bold,
-
+                'Welcome to MAX',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
                 ),
-
               ),
-
-
-
-              const SizedBox(
-
-                height:
-
-                    12,
-
-              ),
-
-
-
+              const SizedBox(height: 12),
               Text(
-
-                onboarding.questions[
-
-                  onboarding.currentStep
-
-                ],
-
-
-
-                style:
-
-                    TextStyle(
-
-                  color:
-
-                      Colors.white
-
-                          .withValues(
-
-                            alpha:
-
-                                .7,
-
-                          ),
-
-                  fontSize:
-
-                      18,
-
+                onboarding.questions[onboarding.currentStep],
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: .7),
+                  fontSize: 18,
                 ),
-
               ),
-
-
-
-              const SizedBox(
-
-                height:
-
-                    30,
-
-              ),
-
-
-
+              const SizedBox(height: 30),
               TextField(
-
-                controller:
-
-                    controller,
-
-
-
-                style:
-
-                    const TextStyle(
-
-                  color:
-
-                      Colors.white,
-
-                ),
-
-
-
-                decoration:
-
-                    InputDecoration(
-
-                  hintText:
-
-                      "Type your answer...",
-
-
-
-                  hintStyle:
-
-                      TextStyle(
-
-                    color:
-
-                        Colors.white
-
-                            .withValues(
-
-                              alpha:
-
-                                  .4,
-
-                            ),
-
+                controller: controller,
+                enabled: !saving,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Type your answer...',
+                  hintStyle: TextStyle(
+                    color: Colors.white.withValues(alpha: .4),
                   ),
-
-
-
-                  filled:
-
-                      true,
-
-
-
-                  fillColor:
-
-                      Colors.white
-
-                          .withValues(
-
-                            alpha:
-
-                                .08,
-
-                          ),
-
-
-
-                  border:
-
-                      OutlineInputBorder(
-
-                    borderRadius:
-
-                        BorderRadius.circular(
-
-                          20,
-
-                        ),
-
-                    borderSide:
-
-                        BorderSide.none,
-
+                  filled: true,
+                  fillColor: Colors.white.withValues(alpha: .08),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: BorderSide.none,
                   ),
-
                 ),
-
               ),
-
-
-
-              const SizedBox(
-
-                height:
-
-                    25,
-
-              ),
-
-
-
+              const SizedBox(height: 25),
               SizedBox(
-
-                width:
-
-                    double.infinity,
-
-
-
-                child:
-
-                    ElevatedButton(
-
-                  onPressed:
-
-                      continueSetup,
-
-
-
-                  style:
-
-                      ElevatedButton.styleFrom(
-
-                    padding:
-
-                        const EdgeInsets.all(
-
-                          16,
-
-                        ),
-
-
-
-                    shape:
-
-                        RoundedRectangleBorder(
-
-                      borderRadius:
-
-                          BorderRadius.circular(
-
-                            20,
-
-                          ),
-
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: saving ? null : continueSetup,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.all(16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
                     ),
-
                   ),
-
-
-
-                  child:
-
-                      Text(
-
-                        onboarding.currentStep ==
-
-                                onboarding.questions.length - 1
-
-                            ? "Finish"
-
-                            : "Continue",
-
-                      ),
-
+                  child: saving
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(
+                          onboarding.currentStep ==
+                                  onboarding.questions.length - 1
+                              ? 'Finish'
+                              : 'Continue',
+                        ),
                 ),
-
               ),
-
             ],
-
           ),
-
         ),
-
       ),
-
     );
-
   }
-
 }
