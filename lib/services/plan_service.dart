@@ -1,60 +1,23 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-
-
+/// Local plan facade used until verified MAX Auth entitlements are available.
+/// The backend entitlement adapter can replace this implementation later.
 class PlanService {
-
-
   PlanService._();
 
+  static final PlanService instance = PlanService._();
 
+  static const _planKey = 'max_plan';
 
-  static final PlanService instance =
-      PlanService._();
-
-
-
-  final SupabaseClient _client =
-      Supabase.instance.client;
-
-
-
-  Future<String> getCurrentPlan(
-    String userId,
-  ) async {
-
-
-    try {
-
-
-      final response =
-          await _client
-              .from('subscriptions')
-              .select('plan')
-              .eq(
-                'user_id',
-                userId,
-              )
-              .single();
-
-
-
-      return response['plan']
-          ?? "MAX BASIC";
-
-
-    }
-
-    catch (_) {
-
-
-      throw Exception(
-        "Failed to load plan",
-      );
-
-    }
-
+  Future<String> getCurrentPlan(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_planKey) ?? 'MAX BASIC';
   }
 
-
+  Future<void> setDevelopmentPlan(String plan) async {
+    final value = plan.trim();
+    if (value.isEmpty) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_planKey, value);
+  }
 }
