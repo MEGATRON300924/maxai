@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../theme/app_animation.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
-import '../theme/app_shadows.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 
@@ -42,9 +41,7 @@ class OnboardingContinueButton extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: AppRadius.pillRadius,
               ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.xxl,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
             ),
             child: loading
                 ? const SizedBox(
