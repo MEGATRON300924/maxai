@@ -57,6 +57,35 @@ class ChatProvider extends ChangeNotifier {
     _setTyping(false);
   }
 
+  Future<void> sendVoiceMessage() async {
+    if (_isTyping || _aiState == AIState.listening) return;
+
+    setAIState(AIState.listening);
+    try {
+      final turn = await chatService.listenAndRespond();
+      if (turn == null) {
+        setAIState(AIState.idle);
+        return;
+      }
+
+      _messages.add(
+        chatService.createUserMessage(message: turn.transcript),
+      );
+      _messages.add(turn.response);
+      setAIState(AIState.speaking);
+    } catch (_) {
+      _messages.add(ChatMessage(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        text: "I couldn't hear or process that. Please try again.",
+        isUser: false,
+        createdAt: DateTime.now(),
+      ));
+      setAIState(AIState.idle);
+    } finally {
+      _setTyping(false);
+    }
+  }
+
   void updateMessage({required String id, required ChatMessage message}) {
     final index = _messages.indexWhere((item) => item.id == id);
     if (index == -1) return;
