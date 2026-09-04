@@ -2,12 +2,16 @@ import 'package:uuid/uuid.dart';
 
 import '../models/chat_message.dart';
 import 'max_ai_brain.dart';
+import 'max_voice_memory_service.dart';
+import 'max_voice_service.dart';
 import 'memory_filter.dart';
 
 class ChatService {
-  ChatService({required this.brain});
+  ChatService({required this.brain, MaxVoiceService? voiceService})
+      : _voiceService = voiceService;
 
   final MaxAIBrain brain;
+  final MaxVoiceService? _voiceService;
   final Uuid _uuid = const Uuid();
 
   Future<ChatMessage> sendMessage({required String message}) async {
@@ -22,6 +26,21 @@ class ChatService {
       sources: _extractLinks(response),
       linkPreview: _findLink(response),
     );
+  }
+
+  Future<VoiceTurn?> listenAndRespond() async {
+    final voice = _voiceService;
+    if (voice == null) return null;
+
+    final user = await brain.auth.currentUser();
+    if (user == null) return null;
+
+    final text = await voice.listen(userId: user.id);
+    if (text == null || text.trim().isEmpty) return null;
+
+    final response = await sendMessage(message: text);
+    await voice.speak(response.text);
+    return VoiceTurn(transcript: text, response: response);
   }
 
   ChatMessage createUserMessage({
@@ -64,4 +83,11 @@ class ChatService {
     final links = _extractLinks(text);
     return links.isEmpty ? null : links.first;
   }
+}
+
+class VoiceTurn {
+  const VoiceTurn({required this.transcript, required this.response});
+
+  final String transcript;
+  final ChatMessage response;
 }
