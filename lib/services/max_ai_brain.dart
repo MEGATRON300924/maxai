@@ -1,5 +1,6 @@
 import '../core/contracts/max_auth_contract.dart';
 import 'gemini_service.dart';
+import 'max_auth_service.dart';
 import 'max_memory_service.dart';
 
 /// Compatibility facade for older callers while MAX AI moves to the unified core.
