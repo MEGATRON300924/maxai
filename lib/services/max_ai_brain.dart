@@ -1,157 +1,36 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
-
+import '../core/contracts/max_auth_contract.dart';
 import 'gemini_service.dart';
-
 import 'max_memory_service.dart';
 
-import 'max_memory_model.dart';
-
-
-
-
-
+/// Compatibility facade for older callers while MAX AI moves to the unified core.
+/// New code should depend on MaxAIService.
 class MaxAIBrain {
-
-
+  MaxAIBrain({
+    required this.gemini,
+    MaxAuthContract? auth,
+    MaxMemoryService? memory,
+  })  : auth = auth ?? MaxAuthService(),
+        memoryService = memory ?? MaxMemoryService.instance;
 
   final GeminiService gemini;
+  final MaxAuthContract auth;
+  final MaxMemoryService memoryService;
 
+  Future<String> askMAX({required String message}) async {
+    final user = await auth.currentUser();
+    if (user == null) return 'Please sign in to use MAX.';
 
-  final MaxMemoryService memoryService =
+    await memoryService.initialize();
+    final memories = memoryService.relevantMemories(message, limit: 8);
 
-      MaxMemoryService();
-
-
-
-
-
-  MaxAIBrain({
-
-    required this.gemini,
-
-  });
-
-
-
-
-
-
-
-  Future<String> askMAX({
-
-    required String message,
-
-  }) async {
-
-
-
-    final user =
-
-        Supabase.instance.client.auth.currentUser;
-
-
-
-
-
-    if(user == null){
-
-
-      return "Please sign in to use MAX.";
-
-    }
-
-
-
-
-
-
-
-    final memories = await memoryService
-
-        .getMemories(
-
-          user.id,
-
-        );
-
-
-
-
-
-
-
-    final profile = await _getProfile(
-
-      user.id,
-
+    return gemini.sendMessage(
+      message: message,
+      memories: memories,
+      userProfile: {
+        'id': user.id,
+        'email': user.email,
+        'name': user.displayName,
+      },
     );
-
-
-
-
-
-
-
-
-    return await gemini.sendMessage(
-
-      message:message,
-
-      memories:memories,
-
-      userProfile:profile,
-
-    );
-
-
-
   }
-
-
-
-
-
-
-
-
-  Future<Map<String,dynamic>> _getProfile(
-
-      String userId
-
-  ) async {
-
-
-
-    final response = await Supabase
-
-        .instance
-
-        .client
-
-        .from('user_profiles')
-
-        .select()
-
-        .eq(
-
-          'id',
-
-          userId,
-
-        )
-
-        .maybeSingle();
-
-
-
-
-
-    return response ?? {};
-
-
-
-  }
-
-
-
 }
