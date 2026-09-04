@@ -31,10 +31,12 @@ class ChatService {
     final voice = _voiceService;
     if (voice == null) return null;
 
+    // Voice chat also works in the development guest mode. Once MAX Auth is
+    // connected, the authenticated ID is used automatically for voice memory.
     final user = await brain.auth.currentUser();
-    if (user == null) return null;
+    final userId = user?.id ?? 'guest';
 
-    final text = await voice.listen(userId: user.id);
+    final text = await voice.listen(userId: userId);
     if (text == null || text.trim().isEmpty) return null;
 
     final response = await sendMessage(message: text);
