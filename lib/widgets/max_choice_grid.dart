@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import 'max_option_chip.dart';
 
 class MaxChoiceGrid extends StatelessWidget {
   final List<String> options;
-
   final List<String> selectedOptions;
-
   final bool multiSelect;
-
   final ValueChanged<List<String>> onChanged;
 
   const MaxChoiceGrid({
@@ -33,9 +29,7 @@ class MaxChoiceGrid extends StatelessWidget {
           title: option,
           selected: selected,
           onTap: () {
-            final values = List<String>.from(
-              selectedOptions,
-            );
+            final values = List<String>.from(selectedOptions);
 
             if (multiSelect) {
               if (selected) {
