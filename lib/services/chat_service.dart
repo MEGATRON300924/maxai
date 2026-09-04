@@ -2,7 +2,6 @@ import 'package:uuid/uuid.dart';
 
 import '../models/chat_message.dart';
 import 'max_ai_brain.dart';
-import 'max_voice_memory_service.dart';
 import 'max_voice_service.dart';
 import 'memory_filter.dart';
 
