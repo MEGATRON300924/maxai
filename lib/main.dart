@@ -21,15 +21,14 @@ const _geminiApiKey = String.fromEnvironment('GEMINI_API_KEY');
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // MAX Cloud/Supabase is intentionally not initialized here until real
+  // MAX Cloud/Supabase is intentionally not initialized until real
   // environment configuration is supplied. The shared runtime remains usable
-  // in development without requiring cloud credentials.
+  // in development without cloud credentials.
   final runtime = await MaxRuntimeScope.instance.initialize();
 
   final brain = MaxAIBrain(
     gemini: GeminiService(apiKey: _geminiApiKey),
     auth: runtime.auth,
-    memory: runtime.memory is dynamic ? null : null,
   );
 
   runApp(MaxAIApp(chatService: ChatService(brain: brain)));
