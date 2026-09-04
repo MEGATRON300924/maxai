@@ -3,6 +3,7 @@ import '../contracts/max_memory_contract.dart';
 import '../contracts/max_subscription_contract.dart';
 import '../contracts/max_sync_contract.dart';
 import '../../services/max_auth_service.dart';
+import '../../services/max_sync_service.dart';
 import 'max_runtime.dart';
 
 /// Creates the default development runtime.
@@ -18,10 +19,15 @@ class MaxRuntimeFactory {
     MaxSyncContract? sync,
     MaxSubscriptionContract? subscriptions,
   }) {
+    final syncService = sync ??
+        QueuedMaxSyncService(
+          remote: NoopMaxSyncService(),
+        );
+
     return MaxRuntime(
       auth: auth ?? MaxAuthService(),
       memory: memory ?? LocalMaxMemoryAdapter(),
-      sync: sync ?? NoopMaxSyncService(),
+      sync: syncService,
       subscriptions: subscriptions ?? DevelopmentSubscriptionService(),
     );
   }
