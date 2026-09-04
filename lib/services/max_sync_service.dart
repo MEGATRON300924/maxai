@@ -119,9 +119,11 @@ class QueuedMaxSyncService implements MaxSyncContract {
   }
 
   Future<void> _enqueue(_PendingSyncOperation operation) async {
-    // Collapse an identical pending operation instead of growing the queue
-    // when the same write is retried repeatedly while offline.
-    _queue.removeWhere((existing) => existing.sameTarget(operation));
+    // Collapse only operations that identify the same remote record.
+    // Untagged pushes remain distinct so independent writes are never lost.
+    if (operation.type == _PendingSyncOperationType.delete || operation.data?['id'] != null) {
+      _queue.removeWhere((existing) => existing.sameTarget(operation));
+    }
     _queue.add(operation);
     await _persistQueue();
   }
@@ -188,9 +190,11 @@ class _PendingSyncOperation {
 
   bool sameTarget(_PendingSyncOperation other) {
     if (type != other.type || collection != other.collection) return false;
-    return type == _PendingSyncOperationType.delete
-        ? id == other.id
-        : data?['id']?.toString() == other.data?['id']?.toString();
+    if (type == _PendingSyncOperationType.delete) return id == other.id;
+
+    final thisId = data?['id']?.toString();
+    final otherId = other.data?['id']?.toString();
+    return thisId != null && otherId != null && thisId == otherId;
   }
 
   Map<String, dynamic> toJson() => {
