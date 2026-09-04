@@ -3,14 +3,10 @@ import 'package:provider/provider.dart';
 
 import '../providers/chat_provider.dart';
 import '../providers/profile_provider.dart';
-import '../models/ai_state.dart';
-
 import '../widgets/chat_bubble.dart';
 import '../widgets/max_chat_input.dart';
-
 import '../core/app_colors.dart';
 import '../core/app_spacing.dart';
-
 import '../widgets/max_svg_icon.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -22,6 +18,12 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _controller = ScrollController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,9 +43,8 @@ class _ChatScreenState extends State<ChatScreen> {
                       controller: _controller,
                       padding: const EdgeInsets.only(top: 20, bottom: 20),
                       itemCount: chat.messages.length,
-                      itemBuilder: (context, index) {
-                        return ChatBubble(message: chat.messages[index]);
-                      },
+                      itemBuilder: (context, index) =>
+                          ChatBubble(message: chat.messages[index]),
                     ),
             ),
             MaxChatInput(
@@ -51,8 +52,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 chat.sendMessage(message: message);
                 _scrollDown();
               },
-              onVoice: () {
-                chat.setAIState(AIState.listening);
+              onVoice: () async {
+                await chat.sendVoiceMessage();
+                _scrollDown();
               },
               onUpload: () {},
             ),
