@@ -6,6 +6,7 @@ import '../providers/onboarding_provider.dart';
 import '../providers/profile_provider.dart';
 import '../models/user_profile.dart';
 import '../ai/memory_manager.dart';
+import '../services/max_memory_service.dart';
 import 'main_navigation.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -29,9 +30,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final onboarding = context.read<OnboardingProvider>();
     final answer = controller.text.trim();
 
-    if (answer.isEmpty) {
-      return;
-    }
+    if (answer.isEmpty) return;
 
     onboarding.saveAnswer(answer);
     controller.clear();
@@ -65,6 +64,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     context.read<ProfileProvider>().loadProfile(profile);
 
+    // Keep the legacy in-memory manager populated for existing UI callers.
     final memory = context.read<MemoryManager>();
     memory.save('name', name);
     if (interests.isNotEmpty) memory.save('interests', interests);
@@ -74,6 +74,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
     if (importantMemory.isNotEmpty) {
       memory.save('important_memory', importantMemory);
+    }
+
+    // Persist the same onboarding facts into MAX's canonical memory service
+    // so the AI brain can use them after app restarts.
+    final maxMemory = MaxMemoryService.instance;
+    await maxMemory.initialize();
+    await maxMemory.savePreference(content: 'User name: $name');
+    if (interests.isNotEmpty) {
+      await maxMemory.savePreference(content: 'Interests: $interests');
+    }
+    if (helpGoals.isNotEmpty) {
+      await maxMemory.savePreference(content: 'Help goals: $helpGoals');
+    }
+    if (communicationStyle.isNotEmpty) {
+      await maxMemory.savePreference(
+        content: 'Preferred communication style: $communicationStyle',
+      );
+    }
+    if (importantMemory.isNotEmpty) {
+      await maxMemory.saveImportantFact(content: importantMemory);
     }
 
     final prefs = await SharedPreferences.getInstance();
