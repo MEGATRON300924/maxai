@@ -10,8 +10,8 @@ import 'max_memory_service.dart';
 ///
 /// Requests are classified first. A registered native tool gets the first
 /// opportunity to handle the request; otherwise Gemini remains the fallback
-/// conversational model. This keeps the app useful while ecosystem providers
-/// are added independently.
+/// conversational model. Guest mode is supported until production MAX Auth is
+/// connected.
 class MaxAIService implements MaxAIContract {
   MaxAIService({
     required GeminiService model,
@@ -42,9 +42,6 @@ class MaxAIService implements MaxAIContract {
 
     final route = _router.route(message);
     final user = await _auth?.currentUser();
-    if (_auth != null && user == null) {
-      throw const MaxAIAuthenticationException();
-    }
 
     final tool = _tools.forIntent(route.intent);
     if (tool != null) {
@@ -77,6 +74,7 @@ class MaxAIService implements MaxAIContract {
         if (user != null) 'id': user.id,
         if (user != null) 'email': user.email,
         if (user?.displayName != null) 'name': user!.displayName,
+        if (user == null) 'mode': 'guest',
         'intent': route.intent.name,
         'intent_confidence': route.confidence,
         'requires_tool': route.requiresTool,
