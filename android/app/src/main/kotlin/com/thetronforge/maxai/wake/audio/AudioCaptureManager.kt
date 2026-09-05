@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.media.AudioRecord
 import android.media.MediaRecorder
-import androidx.core.content.ContextCompat
 import com.thetronforge.maxai.wake.util.WakeEngineConstants
 import com.thetronforge.maxai.wake.util.Logger
 import kotlinx.coroutines.CoroutineScope
@@ -25,7 +24,7 @@ class AudioCaptureManager(
     private var running = false
 
     fun initialize() {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+        if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             throw SecurityException("RECORD_AUDIO permission is required for Hey MAX.")
         }
         val minBuffer = AudioRecord.getMinBufferSize(
