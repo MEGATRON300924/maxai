@@ -1,74 +1,29 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
-
+import 'package:permission_handler/permission_handler.dart';
 
 class MaxWakeController {
+  static const MethodChannel _channel = MethodChannel('com.maxai/wake');
+  static const EventChannel _events = EventChannel('com.maxai/wake_events');
 
+  Stream<Map<String, dynamic>> get wakeEvents =>
+      _events.receiveBroadcastStream().map((event) {
+        if (event is Map) {
+          return Map<String, dynamic>.from(event);
+        }
+        return <String, dynamic>{'event': event};
+      });
 
-  static const MethodChannel _channel =
+  Future<bool> startWakeEngine() async {
+    final permission = await Permission.microphone.request();
+    if (!permission.isGranted) return false;
 
-      MethodChannel(
-
-        "com.maxai/wake",
-
-      );
-
-
-
-  static const EventChannel _events =
-
-      EventChannel(
-
-        "com.maxai/wake_events",
-
-      );
-
-
-
-
-
-
-  Stream<dynamic> get wakeEvents =>
-
-      _events.receiveBroadcastStream();
-
-
-
-
-
-
-
-  Future<void> startWakeEngine() async {
-
-
-    await _channel.invokeMethod(
-
-      "startWake",
-
-    );
-
-
+    final active = await _channel.invokeMethod<bool>('startWake');
+    return active ?? false;
   }
-
-
-
-
-
-
 
   Future<void> stopWakeEngine() async {
-
-
-    await _channel.invokeMethod(
-
-      "stopWake",
-
-    );
-
-
+    await _channel.invokeMethod('stopWake');
   }
-
-
-
 }
