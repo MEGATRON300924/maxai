@@ -1,13 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../models/ai_state.dart';
 import '../models/chat_message.dart';
 import '../services/chat_service.dart';
+import '../services/max_wake_controller.dart';
 
 class ChatProvider extends ChangeNotifier {
   final ChatService chatService;
+  final MaxWakeController? wakeController;
 
-  ChatProvider({required this.chatService});
+  ChatProvider({required this.chatService, this.wakeController});
 
   final List<ChatMessage> _messages = [];
   List<ChatMessage> get messages => List.unmodifiable(_messages);
@@ -18,9 +22,49 @@ class ChatProvider extends ChangeNotifier {
   AIState _aiState = AIState.idle;
   AIState get aiState => _aiState;
 
+  StreamSubscription<Map<String, dynamic>>? _wakeSubscription;
+  bool _wakeEngineActive = false;
+  bool get wakeEngineActive => _wakeEngineActive;
+
   void setAIState(AIState state) {
     _aiState = state;
     notifyListeners();
+  }
+
+  Future<bool> startWakeWord() async {
+    final controller = wakeController;
+    if (controller == null || _wakeEngineActive) return _wakeEngineActive;
+
+    _wakeSubscription ??= controller.wakeEvents.listen(_handleWakeEvent);
+    try {
+      _wakeEngineActive = await controller.startWakeEngine();
+      notifyListeners();
+    } catch (_) {
+      _wakeEngineActive = false;
+      await _wakeSubscription?.cancel();
+      _wakeSubscription = null;
+      notifyListeners();
+    }
+    return _wakeEngineActive;
+  }
+
+  Future<void> stopWakeWord() async {
+    final controller = wakeController;
+    if (controller != null) {
+      try {
+        await controller.stopWakeEngine();
+      } catch (_) {}
+    }
+    _wakeEngineActive = false;
+    await _wakeSubscription?.cancel();
+    _wakeSubscription = null;
+    notifyListeners();
+  }
+
+  void _handleWakeEvent(Map<String, dynamic> event) {
+    if (event['type'] != 'wake_detected') return;
+    if (_isTyping || _aiState == AIState.listening) return;
+    unawaited(sendVoiceMessage());
   }
 
   Future<void> sendMessage({
@@ -139,5 +183,11 @@ class ChatProvider extends ChangeNotifier {
   void _setTyping(bool value) {
     _isTyping = value;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    unawaited(stopWakeWord());
+    super.dispose();
   }
 }
