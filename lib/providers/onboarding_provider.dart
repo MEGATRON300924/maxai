@@ -17,12 +17,19 @@ class OnboardingProvider extends ChangeNotifier {
 
   bool hasAnswer(int step) => answerForStep(step).trim().isNotEmpty;
 
+  bool get currentStepOptional => currentStep == questions.length - 1;
+
+  bool get canContinue => currentStepOptional || hasAnswer(currentStep);
+
   void saveAnswer(String value) {
-    answers[currentStep.toString()] = value.trim();
+    final trimmed = value.trim();
+    if (trimmed.isEmpty && !currentStepOptional) return;
+    answers[currentStep.toString()] = trimmed;
     notifyListeners();
   }
 
   void next() {
+    if (!canContinue) return;
     if (currentStep < questions.length - 1) {
       currentStep++;
       notifyListeners();
