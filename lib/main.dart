@@ -24,23 +24,21 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final runtime = await MaxRuntimeScope.instance.initialize();
-
   final brain = MaxAIBrain(
     gemini: GeminiService(apiKey: _geminiApiKey),
     auth: runtime.auth,
   );
 
-  final voiceService = MaxVoiceService(
-    memoryService: MaxMemoryService.instance,
-  );
-  await voiceService.initialize();
+  final voiceService = MaxVoiceService(memoryService: MaxMemoryService.instance);
+  try {
+    await voiceService.initialize();
+  } catch (_) {
+    // Voice permissions/devices are initialized lazily when voice is used.
+  }
 
   runApp(
     MaxAIApp(
-      chatService: ChatService(
-        brain: brain,
-        voiceService: voiceService,
-      ),
+      chatService: ChatService(brain: brain, voiceService: voiceService),
     ),
   );
 }
