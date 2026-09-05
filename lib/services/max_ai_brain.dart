@@ -1,44 +1,46 @@
+import '../core/contracts/max_ai_contract.dart';
 import '../core/contracts/max_auth_contract.dart';
+import '../core/intelligence/max_memory_tool.dart';
 import '../core/intelligence/max_request_router.dart';
+import '../core/intelligence/max_tool_registry.dart';
 import 'gemini_service.dart';
+import 'max_ai_service.dart';
 import 'max_auth_service.dart';
 import 'max_memory_service.dart';
 
-/// Compatibility facade for older callers while MAX AI moves to the unified core.
-/// New code should depend on MaxAIService.
+/// Compatibility facade for older callers while MAX AI uses the unified core.
 class MaxAIBrain {
   MaxAIBrain({
     required this.gemini,
     MaxAuthContract? auth,
     MaxMemoryService? memory,
     MaxRequestRouter router = const MaxRequestRouter(),
+    MaxToolRegistry? tools,
   })  : auth = auth ?? MaxAuthService(),
         memoryService = memory ?? MaxMemoryService.instance,
-        _router = router;
+        _service = MaxAIService(
+          model: gemini,
+          auth: auth,
+          memory: memory,
+          router: router,
+          tools: tools ?? MaxToolRegistry(),
+        ) {
+    if (tools == null) {
+      _service.tools.register(MaxMemoryTool(memory: memoryService));
+    }
+  }
 
   final GeminiService gemini;
   final MaxAuthContract auth;
   final MaxMemoryService memoryService;
-  final MaxRequestRouter _router;
+  final MaxAIService _service;
+
+  MaxAIService get service => _service;
 
   Future<String> askMAX({required String message}) async {
-    final user = await auth.currentUser();
-    await memoryService.initialize();
-    final memories = memoryService.relevantMemories(message, limit: 8);
-    final route = _router.route(message);
-
-    return gemini.sendMessage(
-      message: message,
-      memories: memories,
-      userProfile: {
-        if (user != null) 'id': user.id,
-        if (user != null) 'email': user.email,
-        if (user?.displayName != null) 'name': user!.displayName,
-        if (user == null) 'mode': 'guest-development',
-        'intent': route.intent.name,
-        'intent_confidence': route.confidence,
-        'requires_tool': route.requiresTool,
-      },
+    final response = await _service.send(
+      MaxAIRequest(message: message),
     );
+    return response.text;
   }
 }
