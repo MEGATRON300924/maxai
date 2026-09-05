@@ -30,12 +30,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final onboarding = context.read<OnboardingProvider>();
     final answer = controller.text.trim();
 
-    if (answer.isEmpty) return;
+    // The final "remember" question is optional; all earlier questions are
+    // required before MAX can finish onboarding.
+    if (answer.isEmpty && !onboarding.currentStepOptional) return;
 
     onboarding.saveAnswer(answer);
-    controller.clear();
 
-    if (onboarding.currentStep < onboarding.questions.length - 1) {
+    if (!onboarding.finished) {
+      controller.clear();
       onboarding.next();
       return;
     }
@@ -64,7 +66,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     context.read<ProfileProvider>().loadProfile(profile);
 
-    // Keep the legacy in-memory manager populated for existing UI callers.
     final memory = context.read<MemoryManager>();
     memory.save('name', name);
     if (interests.isNotEmpty) memory.save('interests', interests);
@@ -76,8 +77,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       memory.save('important_memory', importantMemory);
     }
 
-    // Persist the same onboarding facts into MAX's canonical memory service
-    // so the AI brain can use them after app restarts.
     final maxMemory = MaxMemoryService.instance;
     await maxMemory.initialize();
     await maxMemory.savePreference(content: 'User name: $name');
@@ -143,7 +142,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 enabled: !saving,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  hintText: 'Type your answer...',
+                  hintText: onboarding.currentStepOptional
+                      ? 'Optional — type anything you want MAX to remember...'
+                      : 'Type your answer...',
                   hintStyle: TextStyle(
                     color: Colors.white.withValues(alpha: .4),
                   ),
@@ -173,10 +174,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : Text(
-                          onboarding.currentStep ==
-                                  onboarding.questions.length - 1
-                              ? 'Finish'
-                              : 'Continue',
+                          onboarding.finished ? 'Finish' : 'Continue',
                         ),
                 ),
               ),
