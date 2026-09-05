@@ -26,10 +26,10 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+}
 
-    dependencies {
-        implementation("org.tensorflow:tensorflow-lite:2.14.0")
-    }
+dependencies {
+    implementation("org.tensorflow:tensorflow-lite:2.14.0")
 }
 
 kotlin {
