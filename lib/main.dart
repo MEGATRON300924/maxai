@@ -13,6 +13,7 @@ import 'services/gemini_service.dart';
 import 'services/max_ai_brain.dart';
 import 'services/max_memory_service.dart';
 import 'services/max_voice_service.dart';
+import 'services/max_wake_controller.dart';
 import 'ai/context_provider.dart';
 import 'ai/memory_manager.dart';
 import 'core/app_colors.dart';
@@ -39,21 +40,32 @@ Future<void> main() async {
   runApp(
     MaxAIApp(
       chatService: ChatService(brain: brain, voiceService: voiceService),
+      wakeController: MaxWakeController(),
     ),
   );
 }
 
 class MaxAIApp extends StatelessWidget {
-  const MaxAIApp({super.key, required this.chatService});
+  const MaxAIApp({
+    super.key,
+    required this.chatService,
+    this.wakeController,
+  });
 
   final ChatService chatService;
+  final MaxWakeController? wakeController;
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => HomeProvider()),
-        ChangeNotifierProvider(create: (_) => ChatProvider(chatService: chatService)),
+        ChangeNotifierProvider(
+          create: (_) => ChatProvider(
+            chatService: chatService,
+            wakeController: wakeController,
+          ),
+        ),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(create: (_) => PlanProvider()),
         ChangeNotifierProvider(create: (_) => OnboardingProvider()),
