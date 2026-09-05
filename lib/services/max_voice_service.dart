@@ -8,20 +8,25 @@ class MaxVoiceService {
   final SpeechToText _speech = SpeechToText();
   final MaxMemoryService memoryService;
   bool listening = false;
+  bool _initialized = false;
 
   MaxVoiceService({required this.memoryService});
 
   Future<void> initialize() async {
+    if (_initialized) return;
     await _tts.setLanguage('en-US');
     await _tts.setSpeechRate(.5);
     await _speech.initialize();
     await memoryService.initialize();
+    _initialized = true;
   }
 
   Future<void> speak(String text) async {
     if (text.trim().isEmpty) return;
-    await _tts.stop();
-    await _tts.speak(text);
+    try {
+      await _tts.stop();
+      await _tts.speak(text);
+    } catch (_) {}
   }
 
   Future<void> stopSpeaking() => _tts.stop();
@@ -37,17 +42,18 @@ class MaxVoiceService {
 
   Future<String?> listen({required String userId}) async {
     if (listening) return null;
+    try {
+      await initialize();
+    } catch (_) {
+      return null;
+    }
 
     listening = true;
     var result = '';
-
     try {
-      await _speech.listen(
-        onResult: (value) {
-          result = value.recognizedWords;
-        },
-      );
-
+      await _speech.listen(onResult: (value) {
+        result = value.recognizedWords;
+      });
       while (_speech.isListening) {
         await Future.delayed(const Duration(milliseconds: 200));
       }
@@ -58,11 +64,13 @@ class MaxVoiceService {
     final transcript = result.trim();
     if (transcript.isEmpty) return null;
 
-    await memoryService.saveVoiceMemory(
-      content: transcript,
-      importance: .65,
-      tags: ['voice', 'user:$userId'],
-    );
+    try {
+      await memoryService.saveVoiceMemory(
+        content: transcript,
+        importance: .65,
+        tags: ['voice', 'user:$userId'],
+      );
+    } catch (_) {}
     return transcript;
   }
 
